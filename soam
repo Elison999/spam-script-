@@ -1,68 +1,92 @@
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local LocalPlayer = Players.LocalPlayer
+local detectionDistance = 32.5
+local isSpamming = false
+local spamConnection
 
-local DETECTION_DISTANCE = 32.5
-local TARGET_COLOR = BrickColor.new("Really red")
-
--- Função para verificar se a GameBall está na distância (qualquer cor)
-local function isGameBallNearby()
-    local gameBall = workspace:FindFirstChild("GameBall")
-    
-    if not gameBall then
+-- Função para verificar se há algum player próximo
+local function isPlayerNearby()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         return false
     end
     
-    -- Verifica apenas a distância
-    local distance = (gameBall.Position - humanoidRootPart.Position).Magnitude
-    return distance <= DETECTION_DISTANCE
-end
-
--- Função para verificar se algum player está na distância
-local function isPlayerNearby()
-    for _, otherPlayer in pairs(Players:GetPlayers()) do
-        if otherPlayer ~= player and otherPlayer.Character then
-            local otherHRP = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if otherHRP then
-                local distance = (otherHRP.Position - humanoidRootPart.Position).Magnitude
-                if distance <= DETECTION_DISTANCE then
-                    return true
-                end
+    local myPosition = LocalPlayer.Character.HumanoidRootPart.Position
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (player.Character.HumanoidRootPart.Position - myPosition).Magnitude
+            if distance <= detectionDistance then
+                return true
             end
         end
+    end
+    
+    return false
+end
+
+-- Função para verificar se GameBall existe e é Really Red
+local function isGameBallRed()
+    local gameBall = workspace:FindFirstChild("GameBall")
+    if gameBall and gameBall:IsA("BasePart") then
+        return gameBall.BrickColor == BrickColor.new("Really red")
     end
     return false
 end
 
--- Loop principal
-RunService.Heartbeat:Connect(function()
-    -- Atualiza a referência do character caso o player morra
-    if not character or not character.Parent then
-        character = player.Character
-        if character then
-            humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-        else
-            return
-        end
-    end
+-- Função para enviar o código
+local function fireCode()
+    local args = {
+        [1] = 2.933813859058389e+76
+    }
     
-    -- Verifica se a GameBall está próxima (qualquer cor)
-    if isGameBallNearby() then
-        -- Verifica se NÃO há players próximos
-        if not isPlayerNearby() then
-            -- Executa o código
-            local args = {
-                [1] = 2.933813859058389e+76
-            }
-            
-            local remote = ReplicatedStorage.TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76")
-            if remote then
-                remote:FireServer(unpack(args))
-            end
+    local remote = ReplicatedStorage.TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76")
+    if remote then
+        remote:FireServer(unpack(args))
+    end
+end
+
+-- Função para iniciar o spam
+local function startSpamming()
+    if isSpamming then return end
+    
+    isSpamming = true
+    print("Spam ativado!")
+    
+    spamConnection = RunService.Heartbeat:Connect(function()
+        fireCode()
+    end)
+end
+
+-- Função para parar o spam
+local function stopSpamming()
+    if not isSpamming then return end
+    
+    isSpamming = false
+    print("Spam desativado!")
+    
+    if spamConnection then
+        spamConnection:Disconnect()
+        spamConnection = nil
+    end
+end
+
+-- Loop principal de detecção
+RunService.Heartbeat:Connect(function()
+    local playerNearby = isPlayerNearby()
+    local ballIsRed = isGameBallRed()
+    
+    -- Se detectar player próximo E a bola é vermelha, ativa o spam
+    if playerNearby and ballIsRed then
+        if not isSpamming then
+            startSpamming()
+        end
+    -- Se não detectar player próximo, desativa o spam
+    elseif not playerNearby then
+        if isSpamming then
+            stopSpamming()
         end
     end
 end)
