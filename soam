@@ -36,6 +36,22 @@ local function isGameBallRed()
     return false
 end
 
+-- Função para verificar se GameBall está próximo
+local function isGameBallNearby()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return false
+    end
+    
+    local gameBall = workspace:FindFirstChild("GameBall")
+    if gameBall and gameBall:IsA("BasePart") then
+        local myPosition = LocalPlayer.Character.HumanoidRootPart.Position
+        local distance = (gameBall.Position - myPosition).Magnitude
+        return distance <= detectionDistance
+    end
+    
+    return false
+end
+
 -- Função para enviar o código
 local function fireCode()
     local args = {
@@ -77,14 +93,15 @@ end
 RunService.Heartbeat:Connect(function()
     local playerNearby = isPlayerNearby()
     local ballIsRed = isGameBallRed()
+    local ballNearby = isGameBallNearby()
     
-    -- Se detectar player próximo E a bola é vermelha, ativa o spam
-    if playerNearby and ballIsRed then
+    -- Se detectar player próximo E a bola é vermelha E a bola está próxima, ativa o spam
+    if playerNearby and ballIsRed and ballNearby then
         if not isSpamming then
             startSpamming()
         end
-    -- Se não detectar player próximo, desativa o spam
-    elseif not playerNearby then
+    -- Se não detectar player próximo OU a bola saiu da distância, desativa o spam
+    elseif not playerNearby or not ballNearby then
         if isSpamming then
             stopSpamming()
         end
