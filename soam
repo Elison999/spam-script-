@@ -3,7 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
-local detectionDistance = 33.5
+local detectionDistance = 34.3
 local isSpamming = false
 local spamConnection
 
