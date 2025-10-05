@@ -1,0 +1,68 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local DETECTION_DISTANCE = 32.5
+local TARGET_COLOR = BrickColor.new("Really red")
+
+-- Função para verificar se a GameBall está na distância (qualquer cor)
+local function isGameBallNearby()
+    local gameBall = workspace:FindFirstChild("GameBall")
+    
+    if not gameBall then
+        return false
+    end
+    
+    -- Verifica apenas a distância
+    local distance = (gameBall.Position - humanoidRootPart.Position).Magnitude
+    return distance <= DETECTION_DISTANCE
+end
+
+-- Função para verificar se algum player está na distância
+local function isPlayerNearby()
+    for _, otherPlayer in pairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local otherHRP = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if otherHRP then
+                local distance = (otherHRP.Position - humanoidRootPart.Position).Magnitude
+                if distance <= DETECTION_DISTANCE then
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+-- Loop principal
+RunService.Heartbeat:Connect(function()
+    -- Atualiza a referência do character caso o player morra
+    if not character or not character.Parent then
+        character = player.Character
+        if character then
+            humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        else
+            return
+        end
+    end
+    
+    -- Verifica se a GameBall está próxima (qualquer cor)
+    if isGameBallNearby() then
+        -- Verifica se NÃO há players próximos
+        if not isPlayerNearby() then
+            -- Executa o código
+            local args = {
+                [1] = 2.933813859058389e+76
+            }
+            
+            local remote = ReplicatedStorage.TS.GeneratedNetworkRemotes:FindFirstChild("RE_4.6848415795802784e+76")
+            if remote then
+                remote:FireServer(unpack(args))
+            end
+        end
+    end
+end)
